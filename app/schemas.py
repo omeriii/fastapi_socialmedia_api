@@ -19,13 +19,19 @@ class UserOut(BaseModel):
 
 
 class PostBase(BaseModel):
+    id: int
     title: str
     content: str
     published: bool = True
 
+    class Config:
+        orm_mode = True
 
-class PostCreate(PostBase):
-    pass
+
+class PostCreate(BaseModel):
+    title: str
+    content: str
+    published: bool = True
 
 
 class Post(PostBase):
@@ -46,6 +52,44 @@ class PostOut(BaseModel):
         orm_mode = True
 
 
+class Comment(BaseModel):
+    id: int
+    body: str
+    created_at: datetime
+    user_id: int
+    post_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class CommentCreate(BaseModel):
+    body: str
+    post_id: int
+
+
+class CommentPut(BaseModel):
+    body: str
+
+
+class Comment(BaseModel):
+    id: int
+    body: str
+    created_at: datetime
+    user_id: int
+    post_id: int
+    user: UserOut
+    post: PostBase
+
+    class Config:
+        orm_mode = True
+
+
+class CommentOut(BaseModel):
+    Comment: Comment
+    votes: int
+
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
@@ -62,4 +106,9 @@ class TokenData(BaseModel):
 
 class Vote(BaseModel):
     post_id: int
+    dir: conint(le=1)
+
+
+class CommentVote(BaseModel):
+    comment_id: int
     dir: conint(le=1)
