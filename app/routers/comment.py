@@ -31,6 +31,36 @@ def get_comment(id: int, db: Session = Depends(get_db), current_user: int = Depe
     return comment
 
 
+@router.get("/user/{user_id}", response_model=List[schemas.CommentOut])
+def get_comments_of_user(user_id: int, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user), limit: int = 100):
+
+    # comments = db.query(models.Comment).limit(limit).all()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
+
+    comments = db.query(models.Comment, func.count(models.CommentVote.comment_id).label("votes")).join(
+        models.CommentVote, models.CommentVote.comment_id == models.Comment.id, isouter=True).group_by(models.Comment.id).filter(models.Comment.user_id == user_id).limit(limit).all()
+    return comments
+
+
+@router.get("/post/{post_id}", response_model=List[schemas.CommentOut])
+def get_comments_of_post(post_id: int, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user), limit: int = 100):
+
+    # comments = db.query(models.Comment).limit(limit).all()
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post does not exist")
+
+    comments = db.query(models.Comment, func.count(models.CommentVote.comment_id).label("votes")).join(
+        models.CommentVote, models.CommentVote.comment_id == models.Comment.id, isouter=True).group_by(models.Comment.id).filter(models.Comment.post_id == post_id).limit(limit).all()
+    return comments
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Comment)
 def create_comment(comment: schemas.CommentCreate, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
     new_comment = models.Comment(user_id=current_user.id, **comment.dict())

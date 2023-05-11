@@ -39,6 +39,20 @@ def get_post(id: int, db: Session = Depends(get_db), current_user: int = Depends
     return post
 
 
+@router.get("/user/{user_id}", response_model=List[schemas.PostOut])
+def get_posts_of_user(user_id: int, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user), limit: int = 100):
+
+    # posts = db.query(models.Post).limit(limit).all()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
+    
+    posts = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(
+        models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter(models.Post.user_id == user_id).limit(limit).all()
+    return posts
+
+
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
